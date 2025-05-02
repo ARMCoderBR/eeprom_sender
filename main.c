@@ -177,21 +177,20 @@ repeat:
                 int nb = read(fd,buf,sizeof(buf));
                 for (int i = 0; i < nb; i++){
                     char c = buf[i];
-                    putchar(c); fflush(stdout);
+                    //putchar(c);
                     if ((c == '\n') || (c == '\r')){
 
                         pbufrsp = 0;
 
                         if (!strncmp(bufrsp,"Verify OK.",10)) {
-
+                            printf("OK\n");
                             bufrsp[0] = 0;
                             goto line_ok;
                         }
 
                         if (!strncmp(bufrsp,"VERIFY ERROR",12)){
-
                             bufrsp[0] = 0;
-                            printf("\n====== RETRY ======\n");
+                            printf("Error\n====== RETRY ======\n");
                             goto repeat;
                         }
                     }
