@@ -153,7 +153,7 @@ void send_hexfile(int fd){
     int pbufrsp = 0;
 
     FILE *f = fopen("/home/milton/Tasm/PICALC.HEX","r");
-    //FILE *f = fopen("/home/milton/Tasm/AMON.HEX","r");
+    //FILE *f = fopen("/home/milton/Tasm/AMON2.HEX","r");
     if (!f){
 
         perror("Hex file error\n");
