@@ -145,6 +145,10 @@ repeat:
             if (wait_char(fd)){
 
                 int nb = read(fd,buf,sizeof(buf));
+
+                if (!strncmp(buf,":00000001FF",11))
+                    goto endfile;
+
                 for (int i = 0; i < nb; i++){
                     char c = buf[i];
                     //putchar(c);
@@ -183,7 +187,7 @@ repeat:
 line_ok: {}
         //usleep(200000);
     }
-
+endfile:
     fclose(f);
 }
 
