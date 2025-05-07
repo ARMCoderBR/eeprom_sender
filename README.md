@@ -19,9 +19,10 @@ GPL V2
 
 ## Target
 PC Client Software: Any Linux with GCC. This project was developed on the
-                    Eclipse IDE.
+                    Eclipse IDE, but you don't need to install Eclipse to
+                    build it.
                     
-##Building the Program
+## Building the Program
 To build, use the command 'make all'.
 ```
 cd Debug
