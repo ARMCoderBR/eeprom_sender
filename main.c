@@ -293,9 +293,10 @@ int main(int argc, char *argv[]) {
 
     if (cmd == COD_CMD_HELP){
 
+        printf("eeprom_sender by ARMCoder\n");
         printf("Usage:\n");
-        printf(" serial_io -v\n");
-        printf(" serial_io -f <filename> -d <serial_device>\n");
+        printf(" eeprom_sender -v\n");
+        printf(" eeprom_sender -f <filename> -d <serial_device>\n");
         exit(0);
     }
 
