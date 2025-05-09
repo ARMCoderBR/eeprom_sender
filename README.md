@@ -19,16 +19,17 @@ GPL V2
 
 ## Target
 PC Client Software: Any Linux with GCC. This project was developed on the
-                    Eclipse IDE.
+                    Eclipse IDE, but you don't need to install Eclipse to
+                    build it.
                     
-##Building the Program
+## Building the Program
 To build, use the command 'make all'.
 ```
 cd Debug
 make all
 ```
 
-The executable eeprom_sender will be build in the Debug subdirectory.
+The executable eeprom_sender will be built in the Debug subdirectory.
 
 
 ## Using the Program
@@ -82,9 +83,23 @@ OK
 $
 ```
 
+## Known Issues
+
+The program is working quite flawlessly proveded that the HEX file is well-behaved.
+A basic sanity is done on the input data and checksum validation is performed. The
+program verifies whether the data were correctly written to the EEPROM memory,
+byte after byte.
+
+However, it will not alert the user if there are
+overlapping sections declared in the HEX file (this scenario usually occurs
+when there are linking errors due to misconfigurations).
+
+The program currently doesn't check for out-of-bounds declared data and will
+try to write them anyway (and will apparently succeed, but the data actually
+written will end up in a position pointed by the addres modulo the size of the
+memory. E.G, in a 8 kbyte memory, the address 0x2100 will make data to be
+actuall written at address 0x0100.
+
 ## Disclaimer
 
 This project is supplied 'as is' with no warranty against bugs and errors.
-
-
-
