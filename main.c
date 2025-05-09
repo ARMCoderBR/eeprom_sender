@@ -376,14 +376,15 @@ int main(int argc, char *argv[]) {
     if (!willread && !infile[0])
         cmd = COD_CMD_HELP;
 
-    if (!strcmp(readopt,"2k"))
-        memsize = 2048;
-    else
-    if (!strcmp(readopt,"8k"))
-        memsize = 8192;
-    else
-        cmd = COD_CMD_HELP;
-
+    if (willread){
+        if (!strcmp(readopt,"2k"))
+            memsize = 2048;
+        else
+        if (!strcmp(readopt,"8k"))
+            memsize = 8192;
+        else
+            cmd = COD_CMD_HELP;
+    }
 
     if (cmd == COD_CMD_HELP){
 
