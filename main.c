@@ -121,9 +121,8 @@ void send_hexfile(char *filename,int fd){
     char bufrsp[100];
     int pbufrsp = 0;
 
-    FILE *f = fopen(filename/*"/home/milton/Tasm/PICALC2.HEX"*/,"r");
-    //FILE *f = fopen("/home/milton/Tasm/PICALC.HEX","r");
-    //FILE *f = fopen("/home/milton/Tasm/AMON2.HEX","r");
+    FILE *f = fopen(filename,"r");
+
     if (!f){
 
         perror("Hex file error\n");
@@ -192,12 +191,64 @@ endfile:
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+void read_eeprom(char *filename,int fd, int memsize){
+
+#define READSIZE 32
+    char buf[32];
+    int i;
+    FILE *f = NULL;
+
+    if (filename[0]){
+
+        f = fopen(filename,"w");
+
+        if (!f){
+
+            perror("Hex file error\n");
+            return;
+        }
+    }
+
+//    printf("Memsize:%04x\n",memsize);
+    for (i = 0; i < memsize; i += READSIZE){
+
+        sprintf(buf,"<%04x%02x",i,READSIZE);
+
+        //printf("**%s**\n",buf);
+        write(fd,buf,strlen(buf));
+
+        int count_ms = 10;
+        while (count_ms){
+            if (wait_char(fd)){
+
+                int nb = read(fd,buf,sizeof(buf));
+                buf[nb] = 0;
+                if (f)
+                    fprintf(f,"%s",buf);
+                else
+                    printf("%s",buf);
+            }
+            usleep(10000);
+            --count_ms;
+        }
+    }
+    if (f){
+        fprintf(f,"%s\n",":00000001FF");
+        fclose(f);
+    }
+    else
+        printf(":00000001FF\n");
+}
+
+////////////////////////////////////////////////////////////////////////////////
 typedef enum {
 
     COD_PRM_INFILE=101,
-    COD_PRM_DEVICE=102,
+    COD_PRM_OUTFILE=102,
+    COD_PRM_DEVICE=103,
     COD_CMD_VERSION=1,
-    COD_CMD_HELP=2,
+    COD_CMD_READ=2,
+    COD_CMD_HELP=3,
 } cod_option;
 
 struct option longopts[] = {
@@ -206,6 +257,12 @@ struct option longopts[] = {
         required_argument,      //int         has_arg;
         0,                      //int        *flag;
         COD_PRM_INFILE,         //int         val;
+    },
+    {
+        "o",                    //const char *name;
+        required_argument,      //int         has_arg;
+        0,                      //int        *flag;
+        COD_PRM_OUTFILE,        //int         val;
     },
     {
         "d",                    //const char *name;
@@ -218,6 +275,12 @@ struct option longopts[] = {
         0,                      //int         has_arg;
         0,                      //int        *flag;
         COD_CMD_VERSION,        //int         val;
+    },
+    {
+        "r",                    //const char *name;
+        required_argument,      //int         has_arg;
+        0,                      //int        *flag;
+        COD_CMD_READ,           //int         val;
     },
     {
         "h",                    //const char *name;
@@ -245,8 +308,13 @@ int main(int argc, char *argv[]) {
     int res;
     int longindex;
     char infile[200]="";
+    char outfile[200]="";
     char indevice[200]="";
     int cmd = 0;
+    char readopt[10]="";
+    int willread = 0;
+    int willwrite= 0;
+    int memsize;
 
     int fd;
 
@@ -260,7 +328,7 @@ int main(int argc, char *argv[]) {
         //printf("res:%d longindex:%d\n",res,longindex);
         int val = longopts[longindex].val;
 
-        if (cmd){
+        if ((cmd)&&(val<100)){
 
             perror("Use only one option!\n");
             exit(-1);
@@ -272,8 +340,14 @@ int main(int argc, char *argv[]) {
         switch (val){
 
         case COD_PRM_INFILE:
+            willwrite = 1;
             if (optarg)
                 strncpy(infile,optarg,sizeof(infile)-1);
+            break;
+
+        case COD_PRM_OUTFILE:
+            if (optarg)
+                strncpy(outfile,optarg,sizeof(outfile)-1);
             break;
 
         case COD_PRM_DEVICE:
@@ -281,6 +355,11 @@ int main(int argc, char *argv[]) {
                 strncpy(indevice,optarg,sizeof(indevice)-1);
             break;
 
+        case COD_CMD_READ:
+            if (optarg)
+                strncpy(readopt,optarg,sizeof(readopt)-1);
+            willread = 1;
+            break;
 
         case COD_CMD_VERSION:
             printf("Version:%s\n",VERSION);
@@ -288,8 +367,23 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if ((!infile[0]) || (!indevice[0]))
+    if (willread && willwrite)
         cmd = COD_CMD_HELP;
+
+    if (!indevice[0])
+        cmd = COD_CMD_HELP;
+
+    if (!willread && !infile[0])
+        cmd = COD_CMD_HELP;
+
+    if (!strcmp(readopt,"2k"))
+        memsize = 2048;
+    else
+    if (!strcmp(readopt,"8k"))
+        memsize = 8192;
+    else
+        cmd = COD_CMD_HELP;
+
 
     if (cmd == COD_CMD_HELP){
 
@@ -297,6 +391,7 @@ int main(int argc, char *argv[]) {
         printf("Usage:\n");
         printf(" eeprom_sender -v\n");
         printf(" eeprom_sender -f <filename> -d <serial_device>\n");
+        printf(" eeprom_sender -r {2k|8k} [-o <filename>] -d <serial_device>\n");
         exit(0);
     }
 
@@ -322,7 +417,10 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    send_hexfile(infile,fd);
+    if (willwrite)
+        send_hexfile(infile,fd);
+    else
+        read_eeprom(outfile,fd,memsize);
 
     close(fd);
 
