@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#define VERSION "1.0"
+#define VERSION "1.1"
 
 void send_hexfile(char *filename,int fd);
 
@@ -136,6 +136,8 @@ void send_hexfile(char *filename,int fd){
 
 repeat:
         printf("===%s",buf);
+        if (!strncmp(buf,":00000001FF",11))
+            goto endfile;
 
         write(fd,buf,strlen(buf));
 
@@ -144,9 +146,6 @@ repeat:
             if (wait_char(fd)){
 
                 int nb = read(fd,buf,sizeof(buf));
-
-                if (!strncmp(buf,":00000001FF",11))
-                    goto endfile;
 
                 for (int i = 0; i < nb; i++){
                     char c = buf[i];
