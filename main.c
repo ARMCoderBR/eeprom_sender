@@ -22,72 +22,6 @@
 void send_hexfile(char *filename,int fd);
 
 ////////////////////////////////////////////////////////////////////////////////
-void test_ios(int fd){
-
-    int sercmd, serstat;
-    /////////// RTS
-
-    sercmd = TIOCM_RTS;
-
-    printf("Setting the RTS pin.\n");
-    ioctl(fd, TIOCMBIS, &sercmd); // Set the RTS pin.
-
-    // Read the RTS pin status.
-    ioctl(fd, TIOCMGET, &serstat);
-    if (serstat & TIOCM_RTS)
-        printf("RTS pin is set.\n");
-    else
-        printf("RTS pin is reset.\n");
-
-    getchar(); // Wait for the return key before continuing.
-
-    printf("Resetting the RTS pin.\n");
-    ioctl(fd, TIOCMBIC, &sercmd); // Reset the RTS pin.
-
-    // Read the RTS pin status.
-    ioctl(fd, TIOCMGET, &serstat);
-    if (serstat & TIOCM_RTS)
-        printf("RTS pin is set.\n");
-    else
-        printf("RTS pin is reset.\n");
-
-    getchar(); // Wait for the return key before continuing.
-
-    /////////// DTR
-
-    sercmd = TIOCM_DTR;
-
-    printf("Setting the DTR pin.\n");
-    ioctl(fd, TIOCMBIS, &sercmd); // Set the DTR pin.
-
-    // Read the DTR pin status.
-    ioctl(fd, TIOCMGET, &serstat);
-    if (serstat & TIOCM_DTR)
-        printf("DTR pin is set.\n");
-    else
-        printf("DTR pin is reset.\n");
-
-    getchar(); // Wait for the return key before continuing.
-
-    printf("Resetting the DTR pin.\n");
-    ioctl(fd, TIOCMBIC, &sercmd); // Reset the DTR pin.
-
-    // Read the DTR pin status.
-    ioctl(fd, TIOCMGET, &serstat);
-    if (serstat & TIOCM_DTR)
-        printf("DTR pin is set.\n");
-    else
-        printf("DTR pin is reset.\n");
-
-    for (;;){
-
-        ioctl(fd, TIOCMGET, &serstat);
-        printf("STATUS:%08x\n",serstat);
-        if (getchar() == 27) break;
-    }
-}
-
-////////////////////////////////////////////////////////////////////////////////
 int wait_char(int fd){
 
     fd_set rfds;
@@ -117,8 +51,9 @@ int wait_char(int fd){
 ////////////////////////////////////////////////////////////////////////////////
 void send_hexfile(char *filename,int fd){
 
-    char buf[200];
+    char bufhex[200];
     char bufrsp[100];
+    char bufrx[100];
     int pbufrsp = 0;
 
     FILE *f = fopen(filename,"r");
@@ -129,27 +64,29 @@ void send_hexfile(char *filename,int fd){
         return;
     }
 
+    int retry = 0;
+
     while (!feof(f)){
 
-        buf[0] = 0;
-        fgets(buf,sizeof(buf),f);
+        bufhex[0] = 0;
+        fgets(bufhex,sizeof(bufhex),f);
+        strcat (bufhex,"\r");
 
 repeat:
-        printf("===%s",buf);
-        if (!strncmp(buf,":00000001FF",11))
+        printf("===%s",bufhex);
+        if (!strncmp(bufhex,":00000001FF",11))
             goto endfile;
 
-        strcat (buf,"\r");
-        write(fd,buf,strlen(buf));
+        write(fd,bufhex,strlen(bufhex));
 
-        int count_ms = 5000;
+        int count_ms = 2500;
         while (count_ms){
             if (wait_char(fd)){
 
-                int nb = read(fd,buf,sizeof(buf));
+                int nb = read(fd,bufrx,sizeof(bufrx));
 
                 for (int i = 0; i < nb; i++){
-                    char c = buf[i];
+                    char c = bufrx[i];
                     //putchar(c);
                     if ((c == '\n') || (c == '\r')){
 
@@ -157,6 +94,7 @@ repeat:
 
                         if (!strncmp(bufrsp,"Verify OK.",10)) {
                             printf("OK\n");
+                            retry = 0;
                             bufrsp[0] = 0;
                             goto line_ok;
                         }
@@ -177,7 +115,14 @@ repeat:
             //    usleep(1000);
             --count_ms;
         }
+
         if (!count_ms){
+
+            retry++;
+            if (retry < 6){
+                printf("TIMEOUT!\nRetry.\n");
+                goto repeat;
+            }
 
             printf("TIMEOUT!\nAborting...\n");
             exit(-1);
