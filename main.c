@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#define VERSION "1.1"
+#define VERSION "1.2"
 
 void send_hexfile(char *filename,int fd);
 
@@ -139,6 +139,7 @@ repeat:
         if (!strncmp(buf,":00000001FF",11))
             goto endfile;
 
+        strcat (buf,"\r");
         write(fd,buf,strlen(buf));
 
         int count_ms = 5000;
