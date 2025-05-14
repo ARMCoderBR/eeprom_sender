@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#define VERSION "1.2"
+#define VERSION "1.3"
 
 void send_hexfile(char *filename,int fd);
 
@@ -74,6 +74,7 @@ void send_hexfile(char *filename,int fd){
 
 repeat:
         printf("===%s",bufhex);
+
         if (!strncmp(bufhex,":00000001FF",11))
             goto endfile;
 
@@ -81,6 +82,7 @@ repeat:
 
         int count_ms = 2500;
         while (count_ms){
+
             if (wait_char(fd)){
 
                 int nb = read(fd,bufrx,sizeof(bufrx));
@@ -104,15 +106,17 @@ repeat:
                             printf("Error\n====== RETRY ======\n");
                             goto repeat;
                         }
+
                     }
                     else{
+
                         if (pbufrsp < sizeof(bufrsp))
                             bufrsp[pbufrsp++] = c;
                     }
                 }
             }
-            //else
-            //    usleep(1000);
+            else
+                usleep(1000);
             --count_ms;
         }
 
@@ -129,7 +133,7 @@ repeat:
         }
 
 line_ok: {}
-        //usleep(200000);
+        usleep(50000);
     }
 endfile:
     fclose(f);
