@@ -361,6 +361,8 @@ int main(int argc, char *argv[]) {
     cfsetispeed(&termios_p, B19200);
     cfsetospeed(&termios_p, B19200);
 
+    termios_p.c_cflag |= CRTSCTS;
+
     res = tcsetattr(fd, TCSANOW, &termios_p);
     if (res < 0){
         perror ("Port control error\n");
